@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register</title>
+    <title>My Account</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&display=swap');
 
@@ -85,26 +85,18 @@
         }
 
         h1 {
-            font-size: 4rem;
+            font-size: 3rem;
             font-weight: 800;
-            letter-spacing: 4px;
+            letter-spacing: 3px;
             display: inline-block;
             position: relative;
             text-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
             margin-bottom: 1rem;
         }
 
-        .logo-part-meet {
+        .account-title {
             color: var(--light);
             background: linear-gradient(120deg, var(--light) 30%, rgba(255, 255, 255, 0.8));
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .logo-part-ko {
-            color: var(--accent2);
-            background: linear-gradient(120deg, var(--accent2) 30%, #2fc2ef);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -141,42 +133,50 @@
             position: relative;
             overflow: visible;
             margin-bottom: 8px;
-            opacity: 0; /* Ensure all form groups start invisible */
         }
 
-        /* Individual form group animations */
         .form-group:nth-child(1) {
             animation: slide-in-right 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
             animation-delay: 0.8s;
+            opacity: 0;
             transform: translateX(-30px);
         }
 
         .form-group:nth-child(2) {
             animation: slide-in-left 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
             animation-delay: 1s;
+            opacity: 0;
             transform: translateX(30px);
         }
 
         .form-group:nth-child(3) {
             animation: slide-in-right 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
             animation-delay: 1.2s;
+            opacity: 0;
             transform: translateX(-30px);
         }
 
-        /* Special explicit styling for password field */
         .form-group:nth-child(4) {
             animation: slide-in-left 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
             animation-delay: 1.4s;
-            transform: translateX(30px);
-        }
-
-        /* Password-specific animation to ensure it runs */
-        .password-field {
-            animation: slide-in-right 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
-            animation-delay: 1.6s !important;
             opacity: 0;
             transform: translateX(30px);
         }
+
+        .form-group:nth-child(5) {
+            animation: slide-in-right 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            animation-delay: 1.6s;
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+
+        .form-group:nth-child(6) {
+            animation: slide-in-left 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            animation-delay: 1.8s;
+            opacity: 0;
+            transform: translateX(30px);
+        }
+
 
         @keyframes slide-in-right {
             0% {
@@ -212,6 +212,16 @@
             transition: all 0.3s ease;
             position: relative;
             z-index: 2;
+        }
+
+        label {
+            display: block;
+            text-align: left;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.9);
+            padding-left: 1rem;
         }
 
         input::placeholder {
@@ -293,7 +303,7 @@
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
             cursor: pointer;
             animation: button-appear 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            animation-delay: 1.6s;
+            animation-delay: 1.8s;
             opacity: 0;
             transform: translateY(20px) scale(0.95);
         }
@@ -365,7 +375,7 @@
             animation: ripple 0.6s ease-out;
         }
 
-        .register-btn {
+        .update-btn {
             margin-top: 1rem;
             width: 100%;
             display: flex;
@@ -374,80 +384,40 @@
             position: relative;
             overflow: hidden;
             padding: 1.1rem 1.5rem 1.1rem 2.5rem;
-            animation: button-appear 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            animation-delay: 1.6s;
-            opacity: 0;
-            transform: translateY(20px) scale(0.95);
         }
 
-        .register-btn .icon {
+        .update-btn .icon {
             margin-left: 10px;
             opacity: 0;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.3s ease;
             transform: translateX(-5px);
         }
 
-        .register-btn:hover .icon {
+        .update-btn:hover .icon {
             opacity: 1;
-            transform: translateX(5px);
+            transform: translateX(0);
         }
 
-        .register-btn:hover {
+        .update-btn:hover {
             color: white;
             transform: translateY(-5px) scale(1.05);
-            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 10px 25px rgba(184, 247, 255, 0.603);
             border-color: transparent;
         }
 
-        .register-btn::before {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            z-index: -1;
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            background: linear-gradient(45deg, var(--accent), var(--accent2));
-            opacity: 0;
-            transform: scaleX(0);
-            transform-origin: right;
-        }
-
-        .register-btn:hover::before {
-            opacity: 1;
-            transform: scaleX(1);
-        }
-
-        .register-btn::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 5px;
-            height: 5px;
-            background: rgba(255, 255, 255, 0.5);
-            opacity: 0;
-            border-radius: 100%;
-            transform: scale(1, 1) translate(-50%);
-            transform-origin: 50% 50%;
-        }
-
-        .register-btn:active::after {
-            animation: ripple 0.6s ease-out;
-        }
-
-        .login-link {
+        .back-link {
             display: inline-block;
             color: white;
             text-decoration: none;
+            opacity: 0.8;
             transition: all 0.3s ease;
             font-size: 0.9rem;
             position: relative;
             animation: link-appear 0.8s ease-out forwards;
-            animation-delay: 1.8s;
+            animation-delay: 2s;
             opacity: 0;
             transform: translateY(10px);
+            margin-right: 1rem;
         }
 
         @keyframes link-appear {
@@ -461,7 +431,7 @@
             }
         }
 
-        .login-link::after {
+        .back-link::after {
             content: '';
             position: absolute;
             width: 0;
@@ -472,11 +442,11 @@
             transition: all 0.3s ease;
         }
 
-        .login-link:hover {
+        .back-link:hover {
             opacity: 1;
         }
 
-        .login-link:hover::after {
+        .back-link:hover::after {
             width: 100%;
         }
 
@@ -589,74 +559,37 @@
             }
         }
 
-        .glowing-dots {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-            z-index: 1;
+        .flash-message {
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            animation: flash-appear 0.5s ease forwards;
         }
 
-        .glowing-dots div {
-            position: absolute;
-            display: block;
-            width: 3px;
-            height: 3px;
-            background: white;
-            border-radius: 50%;
-            animation: glowing 10s linear infinite;
-        }
-
-        @keyframes glowing {
+        @keyframes flash-appear {
             0% {
-                transform: scale(1);
                 opacity: 0;
-            }
-            50% {
-                opacity: 0.5;
+                transform: translateY(-20px);
             }
             100% {
-                transform: scale(2);
-                opacity: 0;
+                opacity: 1;
+                transform: translateY(0);
             }
         }
 
-        .glowing-dots div:nth-child(1) {
-            top: 20%;
-            left: 10%;
-            animation-delay: 0s;
+        .success {
+            background-color: rgba(76, 175, 80, 0.3);
+            border: 1px solid rgba(76, 175, 80, 0.5);
         }
 
-        .glowing-dots div:nth-child(2) {
-            top: 70%;
-            left: 30%;
-            animation-delay: 3s;
-        }
-
-        .glowing-dots div:nth-child(3) {
-            top: 40%;
-            left: 60%;
-            animation-delay: 6s;
-        }
-
-        .glowing-dots div:nth-child(4) {
-            top: 80%;
-            left: 80%;
-            animation-delay: 9s;
+        .error {
+            background-color: rgba(244, 67, 54, 0.3);
+            border: 1px solid rgba(244, 67, 54, 0.5);
         }
     </style>
 </head>
 
 <body>
-    <div class="glowing-dots">
-        <div></div>
-        <div></div>
-        <div></div>
-        <div></div>
-    </div>
-    
     <ul class="circles">
         <li></li>
         <li></li>
@@ -672,28 +605,47 @@
 
     <div class="container">
         <div class="logo-container">
-            <h1><span class="logo-part-meet">meet</span><span class="logo-part-ko">ko</span></h1>
+            <h1 class="account-title">My Account</h1>
         </div>
         
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
         <div class="form-container">
-            <form method="POST" action="">
+            <form method="POST" action="{{ url_for('account') }}">
                 {{ form.hidden_tag() }}
                 <div class="form-group">
-                    {{ form.username(placeholder="Username", class="form-control") }}
+                    <label for="username">Username</label>
+                    {{ form.username(id="username", class="form-control") }}
                 </div>
                 <div class="form-group">
-                    {{ form.car(placeholder="Car (optional)", class="form-control") }}
+                    <label for="car">Car</label>
+                    {{ form.car(id="car", class="form-control") }}
                 </div>
                 <div class="form-group">
-                    {{ form.car_description(placeholder="Mods (optional)", class="form-control") }}
+                    <label for="car_description">Car Description (Mods)</label>
+                    {{ form.car_description(id="car_description", class="form-control") }}
                 </div>
-                <div class="form-group password-field">
-                    {{ form.password(placeholder="Password", class="form-control") }}
+                <div class="form-group">
+                    <label for="old_password">Current Password (required for password change)</label>
+                    {{ form.old_password(id="old_password", class="form-control") }}
                 </div>
-                <button type="submit" class="btn register-btn">Sign Up <span class="icon">→</span></button>
+                <div class="form-group">
+                    <label for="new_password">New Password</label>
+                    {{ form.new_password(id="new_password", class="form-control") }}
+                </div>
+                <button type="submit" class="btn update-btn">Update Account <span class="icon">→</span></button>
             </form>
             
-            <a href="{{ url_for('login') }}" class="login-link">Already have an account? Sign In</a>
+            <div style="margin-top: 20px;">
+                <a href="{{ url_for('glavna') }}" class="back-link">Main Page</a>
+                <a href="{{ url_for('logout') }}" class="back-link">Logout</a>
+            </div>
         </div>
     </div>
 </body>

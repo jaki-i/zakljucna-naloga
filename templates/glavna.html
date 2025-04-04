@@ -7,5 +7,9 @@
 </head>
 <body>
     <h1>migej</h1>
+    <div class="account-info">
+        <a href="{{ url_for('account') }}">{{ current_user.username }}</a>
+        <a href="{{ url_for('logout') }}" class="back-link">Logout</a>
+    </div>
 </body>
 </html>

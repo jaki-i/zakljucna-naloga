@@ -345,11 +345,6 @@
             }
         }
 
-        .btn:active::after {
-            animation: ripple 0.6s ease-out;
-        }
-
-        /* Updated login button styling to match homepage */
         .login-btn {
             margin-top: 1rem;
             width: 100%;
@@ -359,59 +354,67 @@
             position: relative;
             overflow: hidden;
             padding: 1.1rem 1.5rem 1.1rem 2.5rem;
+            animation: button-appear 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            animation-delay: 1.6s;
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
         }
 
-        /* Add icon span to login button */
         .login-btn .icon {
             margin-left: 10px;
             opacity: 0;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             transform: translateX(-5px);
         }
 
         .login-btn:hover .icon {
             opacity: 1;
-            transform: translateX(0);
+            transform: translateX(5px);
         }
 
-        /* Modify hover effect to match homepage */
         .login-btn:hover {
             color: white;
             transform: translateY(-5px) scale(1.05);
-            box-shadow: 0 10px 25px rgba(184, 247, 255, 0.603);
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.2);
             border-color: transparent;
         }
 
-        /* Hover glow effect matching homepage */
-        .login-btn:hover {
-            box-shadow: 0 10px 25px rgba(184, 247, 255, 0.603);
-        }
-
-        /* Enhanced hover animations for login button */
         .login-btn::before {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(
-                45deg,
-                transparent 0%,
-                rgba(255, 255, 255, 0.03) 30%,
-                rgba(255, 255, 255, 0.1) 47%,
-                rgba(255, 255, 255, 0.03) 53%,
-                transparent 100%
-            );
-            transform: rotate(45deg);
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: linear-gradient(45deg, var(--accent), var(--accent2));
             opacity: 0;
-            transition: opacity 0.3s ease, transform 1.5s ease;
+            transform: scaleX(0);
+            transform-origin: right;
         }
 
         .login-btn:hover::before {
             opacity: 1;
-            transform: rotate(45deg) translate(10%, 10%);
-            animation: smooth-shine 2s infinite ease-in-out;
+            transform: scaleX(1);
+        }
+
+        .login-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        .login-btn:active::after {
+            animation: ripple 0.6s ease-out;
         }
 
         @keyframes smooth-shine {
