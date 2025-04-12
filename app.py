@@ -17,6 +17,11 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
+carmeet_participants = db.Table('carmeet_participants',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('carmeet_id', db.Integer, db.ForeignKey('carmeet.id'), primary_key=True)
+)
+
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(20), nullable=False, unique=True)
@@ -33,6 +38,8 @@ class Carmeet(db.Model):
     end_time = db.Column(db.String(20), nullable=False)
     car_entry_fee = db.Column(db.Boolean, default=False)
     visitor_ticket = db.Column(db.Boolean, default=False)
+    participants = db.relationship('User', secondary=carmeet_participants,
+                                  backref=db.backref('carmeets', lazy='dynamic'))
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -130,7 +137,8 @@ def logout():
 
 @app.route('/glavna')
 def glavna():
-    return render_template('glavna.html')
+    carmeets = Carmeet.query.all()
+    return render_template('glavna.html', carmeets=carmeets)
 
 from flask import flash
 
@@ -207,6 +215,34 @@ def carmeet():
             return redirect(url_for('glavna'))
     
     return render_template('carmeet.html', form=form)
+
+@app.route('/join_carmeet/<int:carmeet_id>', methods=['POST'])
+@login_required
+def join_carmeet(carmeet_id):
+    carmeet = Carmeet.query.get_or_404(carmeet_id)
+    
+    if current_user not in carmeet.participants:
+        carmeet.participants.append(current_user)
+        db.session.commit()
+        flash('You have joined the car meet!', 'success')
+    else:
+        flash('You are already participating in this car meet', 'info')
+    
+    return redirect(url_for('glavna'))
+
+@app.route('/leave_carmeet/<int:carmeet_id>', methods=['POST'])
+@login_required
+def leave_carmeet(carmeet_id):
+    carmeet = Carmeet.query.get_or_404(carmeet_id)
+    
+    if current_user in carmeet.participants:
+        carmeet.participants.remove(current_user)
+        db.session.commit()
+        flash('You have left the car meet', 'success')
+    else:
+        flash('You are not participating in this car meet', 'info')
+    
+    return redirect(url_for('glavna'))
 
 if __name__ == "__main__":
     with app.app_context():

@@ -28,6 +28,26 @@
             border-radius: 4px;
             cursor: pointer;
         }
+        .flash-message {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .location-info {
+            margin-top: 10px;
+            font-style: italic;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -36,14 +56,30 @@
             <h1>meetko</h1>
         </div>
         
+        <!-- Flash messages section -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
         <h2>Mark the location for your car meet</h2>
         <div id="map"></div>
+        <div class="location-info" id="location-status">
+            No location selected. Please click on the map to select a location.
+        </div>
         
         <div class="form-container">
             <form method="POST" action="">
                 {{ form.hidden_tag() }}
+                <!-- Hidden fields for map coordinates -->
                 <input type="hidden" id="lat" name="latitude" value="">
                 <input type="hidden" id="lng" name="longitude" value="">
+                
                 <div class="form-group">
                     {{ form.name(placeholder="Name", class="form-control") }}
                 </div>
@@ -67,6 +103,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         const map = L.map('map').setView([46.05, 14.51], 8);
+        const locationStatus = document.getElementById('location-status');
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
@@ -80,8 +117,28 @@
             }
 
             marker = L.marker(e.latlng).addTo(map);
+            
+            // Update hidden form fields
             document.getElementById('lat').value = e.latlng.lat;
             document.getElementById('lng').value = e.latlng.lng;
+            
+            // Update status message
+            locationStatus.innerHTML = 'Location selected: ' + 
+                e.latlng.lat.toFixed(6) + ', ' + e.latlng.lng.toFixed(6);
+            locationStatus.style.color = '#155724';
+        });
+        
+        // Form validation before submit
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const lat = document.getElementById('lat').value;
+            const lng = document.getElementById('lng').value;
+            
+            if (!lat || !lng) {
+                e.preventDefault();
+                alert('Please select a location on the map before submitting');
+                locationStatus.innerHTML = 'No location selected! Please click on the map.';
+                locationStatus.style.color = '#721c24';
+            }
         });
     </script>
 </body>
