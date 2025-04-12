@@ -24,6 +24,16 @@ class User(db.Model, UserMixin):
     car_description = db.Column(db.Text, nullable=True)
     password = db.Column(db.String(80), nullable=False)
 
+class Carmeet(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(20), nullable=False)
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    start_time = db.Column(db.String(20), nullable=False)
+    end_time = db.Column(db.String(20), nullable=False)
+    car_entry_fee = db.Column(db.Boolean, default=False)
+    visitor_ticket = db.Column(db.Boolean, default=False)
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -54,12 +64,29 @@ class LoginForm(FlaskForm):
     submit = SubmitField('Login')
 
 class AccountForm(FlaskForm):
-    username = StringField('Username', validators=[Length(min=4, max=20)])
-    car = StringField('Car', validators=[Length(max=50)])
-    car_description = StringField('Mods description', validators=[Length(max=200)])
-    old_password = PasswordField('Old password')
-    new_password = PasswordField('New password', validators=[Length(min=4, max=20)])
+    username = StringField(validators=[
+        Length(min=4, max=20)], render_kw={"placeholder": "Username"})
+    car = StringField(validators=[
+        Length(max=50)], render_kw={"placeholder": "Car"})
+    car_description = StringField(validators=[
+        Length(max=200)], render_kw={"placeholder": "Mods description"})
+    old_password = PasswordField(render_kw={"placeholder": "Old password"})
+    new_password = PasswordField(validators=[
+        Length(min=4, max=20)], render_kw={"placeholder": "New password"})
     submit = SubmitField('Update Account')
+
+class CarmeetForm(FlaskForm):
+    name = StringField(validators=[
+        InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Name"})
+    start = StringField(validators=[
+        InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Start time"})
+    end = StringField(validators=[
+        InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "End time"})
+    centry = StringField(validators=[
+        Length(max=50)], render_kw={"placeholder": "Car entry fee"})
+    ventry = StringField(validators=[
+        Length(max=50)], render_kw={"placeholder": "Visitor entry fee"})
+    submit = SubmitField('Create car meet')
 
 @app.route('/')
 def home():
@@ -150,6 +177,36 @@ def account():
         form.car_description.data = current_user.car_description
     
     return render_template('account.html', form=form)
+
+@app.route('/carmeet', methods=['GET', 'POST'])
+@login_required
+def carmeet():
+    form = CarmeetForm()
+    
+    if form.validate_on_submit():
+            latitude = float(request.form.get('latitude'))
+            longitude = float(request.form.get('longitude'))
+            
+            if not latitude or not longitude:
+                flash('Please select a location on the map', 'error')
+                return render_template('carmeet.html', form=form)
+            
+            new_carmeet = Carmeet(
+                name=form.name.data,
+                latitude=latitude, 
+                longitude=longitude,
+                start_time=form.start.data,
+                end_time=form.end.data,
+                car_entry_fee=bool(form.centry.data),
+                visitor_ticket=bool(form.ventry.data)
+            )
+            
+            db.session.add(new_carmeet)
+            db.session.commit()
+            flash('Car meet created successfully!', 'success')
+            return redirect(url_for('glavna'))
+    
+    return render_template('carmeet.html', form=form)
 
 if __name__ == "__main__":
     with app.app_context():
