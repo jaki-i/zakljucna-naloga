@@ -5,6 +5,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import InputRequired, Length, ValidationError
 from flask_bcrypt import Bcrypt
+from flask import flash
 #pip install flask, flask_sqlalchemy, flask_login, flask_wtf, wtforms, wtforms.validators, flask_bcrypt
 
 app = Flask(__name__)
@@ -38,8 +39,19 @@ class Carmeet(db.Model):
     end_time = db.Column(db.String(20), nullable=False)
     car_entry_fee = db.Column(db.Boolean, default=False)
     visitor_ticket = db.Column(db.Boolean, default=False)
+    creator_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     participants = db.relationship('User', secondary=carmeet_participants,
                                   backref=db.backref('carmeets', lazy='dynamic'))
+
+class Race(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(20), nullable=False)
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    car_name = db.Column(db.String(20), nullable=False)
+    hp = db.Column(db.Integer(4), nullable=False)
+    mods = db.Column(db.String(20), nullable=True)
+    creator_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -60,8 +72,7 @@ class RegisterForm(FlaskForm):
         existing_user_username = User.query.filter_by(
             username=username.data).first()
         if existing_user_username:
-            flash(
-                'That username already exists. Please choose a different one.')
+            raise ValidationError('That username already exists. Please choose a different one.')
 
 class LoginForm(FlaskForm):
     username = StringField(validators=[
@@ -94,6 +105,17 @@ class CarmeetForm(FlaskForm):
     ventry = StringField(validators=[
         Length(max=50)], render_kw={"placeholder": "Visitor entry fee"})
     submit = SubmitField('Create car meet')
+
+class RaceForm(FlaskForm):
+    name = StringField(validators=[
+        InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Name"})
+    car_name = StringField(validators=[
+        InputRequired(), Length(min=4, max=20)], render_kw={"placeholder": "Car"})
+    hp = StringField(validators=[
+        InputRequired(), Length(min=2, max=4)], render_kw={"placeholder": "Horsepower"})
+    mods = StringField(validators=[
+        Length(min=4, max=50)], render_kw={"placeholder": "Modifications"})
+    submit = SubmitField('Create race')
 
 @app.route('/')
 def home():
@@ -139,8 +161,6 @@ def logout():
 def glavna():
     carmeets = Carmeet.query.all()
     return render_template('glavna.html', carmeets=carmeets)
-
-from flask import flash
 
 @app.route('/account', methods=['GET', 'POST'])
 @login_required
@@ -206,7 +226,8 @@ def carmeet():
                 start_time=form.start.data,
                 end_time=form.end.data,
                 car_entry_fee=bool(form.centry.data),
-                visitor_ticket=bool(form.ventry.data)
+                visitor_ticket=bool(form.ventry.data),
+                creator_id=current_user.id
             )
             
             db.session.add(new_carmeet)
@@ -243,6 +264,35 @@ def leave_carmeet(carmeet_id):
         flash('You are not participating in this car meet', 'info')
     
     return redirect(url_for('glavna'))
+
+@app.route('/delete_carmeet/<int:carmeet_id>', methods=['POST'])
+@login_required
+def delete_carmeet(carmeet_id):
+    carmeet = Carmeet.query.get_or_404(carmeet_id)
+
+    if carmeet.creator_id == current_user.id:
+        try:
+            db.session.delete(carmeet)
+            db.session.commit()
+            flash('Car meet deleted successfully', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error deleting car meet: {str(e)}', 'error')
+    else:
+        flash('You can only delete car meets that you created', 'error')
+    
+    return redirect(url_for('glavna'))
+
+@app.route('/race')
+@login_required
+def race():
+    form = RaceForm()
+    
+    if form.validate_on_submit():
+            latitude = float(request.form.get('latitude'))
+            longitude = float(request.form.get('longitude'))
+
+    return render_template('race.html', form=form)
 
 if __name__ == "__main__":
     with app.app_context():
