@@ -49,7 +49,7 @@ class Race(db.Model):
     latitude = db.Column(db.Float, nullable=False)
     longitude = db.Column(db.Float, nullable=False)
     car_name = db.Column(db.String(20), nullable=False)
-    hp = db.Column(db.Integer(4), nullable=False)
+    hp = db.Column(db.String(4), nullable=False)
     mods = db.Column(db.String(20), nullable=True)
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
@@ -292,7 +292,54 @@ def race():
             latitude = float(request.form.get('latitude'))
             longitude = float(request.form.get('longitude'))
 
+            if not latitude or not longitude:
+                flash('Please select a location on the map', 'error')
+                return render_template('carmeet.html', form=form)
+            
+            new_race = Race(
+                name=form.name.data,
+                latitude=latitude, 
+                longitude=longitude,
+                car_name=form.car_name.data,
+                hp=form.hp.data,
+                mods=form.mods.data,
+                creator_id=current_user.id
+            )
+
+            db.session.add(new_race)
+            db.session.commit()
+            flash('Race created successfully!', 'success')
+            return redirect(url_for('glavna'))        
+
     return render_template('race.html', form=form)
+
+@app.route('/join_race/<int:race_id>', methods=['POST'])
+@login_required
+def join_race(race_id):
+    race = Race.query.get_or_404(race_id)
+    
+    if current_user not in race.participants:
+        race.participants.append(current_user)
+        db.session.commit()
+        flash('You have joined the race!', 'success')
+    else:
+        flash('You are already participating in this race', 'info')
+    
+    return redirect(url_for('glavna'))
+
+@app.route('/leave_race/<int:race_id>', methods=['POST'])
+@login_required
+def leave_race(race_id):
+    race = Race.query.get_or_404(race_id)
+    
+    if current_user in race.participants:
+        race.participants.remove(current_user)
+        db.session.commit()
+        flash('You have left the car meet', 'success')
+    else:
+        flash('You are not participating in this car meet', 'info')
+    
+    return redirect(url_for('glavna'))
 
 if __name__ == "__main__":
     with app.app_context():
