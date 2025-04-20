@@ -310,7 +310,50 @@
             border-radius: 3px;
         }
 
-        .carmeet-list {
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px 10px 0 0;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            margin-right: 5px;
+        }
+        
+        .tab.active {
+            background: rgba(255, 255, 255, 0.15);
+            border-bottom: 3px solid var(--accent2);
+        }
+        
+        .tab:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fade-in 0.5s ease-out forwards;
+        }
+        
+        @keyframes fade-in {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .carmeet-list, .race-list {
             display: flex;
             flex-direction: column;
             gap: 20px;
@@ -321,21 +364,21 @@
             padding-right: 10px;
         }
         
-        .carmeet-list::-webkit-scrollbar {
+        .carmeet-list::-webkit-scrollbar, .race-list::-webkit-scrollbar {
             width: 6px;
         }
         
-        .carmeet-list::-webkit-scrollbar-track {
+        .carmeet-list::-webkit-scrollbar-track, .race-list::-webkit-scrollbar-track {
             background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
         }
         
-        .carmeet-list::-webkit-scrollbar-thumb {
+        .carmeet-list::-webkit-scrollbar-thumb, .race-list::-webkit-scrollbar-thumb {
             background-color: var(--accent2);
             border-radius: 10px;
         }
 
-        .carmeet-card {
+        .carmeet-card, .race-card {
             background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.15);
@@ -349,11 +392,11 @@
             opacity: 0;
         }
 
-        .carmeet-card:nth-child(odd) {
+        .carmeet-card:nth-child(odd), .race-card:nth-child(odd) {
             animation-delay: 0.15s;
         }
 
-        .carmeet-card:nth-child(even) {
+        .carmeet-card:nth-child(even), .race-card:nth-child(even) {
             animation-delay: 0.3s;
         }
 
@@ -368,12 +411,12 @@
             }
         }
 
-        .carmeet-card:hover {
+        .carmeet-card:hover, .race-card:hover {
             transform: translateY(-10px);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         }
 
-        .carmeet-title {
+        .carmeet-title, .race-title {
             margin-top: 0;
             color: var(--light);
             font-weight: 600;
@@ -381,7 +424,7 @@
             margin-bottom: 15px;
         }
 
-        .carmeet-card p {
+        .carmeet-card p, .race-card p {
             margin: 8px 0;
             font-size: 0.9rem;
             opacity: 0.9;
@@ -638,7 +681,7 @@
         }
         
         @media (max-width: 768px) {
-            .carmeet-list {
+            .carmeet-list, .race-list {
                 height: auto;
                 max-height: 600px;
             }
@@ -707,115 +750,306 @@
             </div>
             
             <div class="meets-section">
-                <h2>Upcoming Car Meets</h2>
-                <div class="carmeet-list">
-                    {% for meet in carmeets %}
-                        <div class="carmeet-card" data-id="{{ meet.id }}">
-                            <h3 class="carmeet-title">{{ meet.name }}</h3>
-                            <p>Start: {{ meet.start_time }}</p>
-                            <p>End: {{ meet.end_time }}</p>
-                            <p>Car Entry Fee: {{ 'Yes' if meet.car_entry_fee else 'No' }}</p>
-                            <p>Visitor Ticket: {{ 'Yes' if meet.visitor_ticket else 'No' }}</p>
-                            
-                            <div class="participant-count">
-                                Participants: {{ meet.participants|length }}
-                            </div>
-                            
-                            <div class="participant-list">
-                                <ul>
-                                    {% for participant in meet.participants %}
-                                        <li>{{ participant.username }} {% if participant.car %}- {{ participant.car }}{% endif %}</li>
-                                    {% endfor %}
-                                </ul>
-                            </div>
-                            
-                            <div class="card-actions">
-                                {% if current_user.is_authenticated %}
-                                    {% if current_user in meet.participants %}
-                                        <form action="{{ url_for('leave_carmeet', carmeet_id=meet.id) }}" method="post">
-                                            <button type="submit" class="btn btn-leave">Leave</button>
-                                        </form>
-                                    {% else %}
-                                        <form action="{{ url_for('join_carmeet', carmeet_id=meet.id) }}" method="post">
-                                            <button type="submit" class="btn">Join</button>
-                                        </form>
-                                    {% endif %}
-                                    
-                                    {% if meet.creator_id == current_user.id %}
-                                        <form action="{{ url_for('delete_carmeet', carmeet_id=meet.id) }}" method="post" onsubmit="return confirm('Are you sure you want to delete this car meet?');">
-                                            <button type="submit" class="btn btn-delete">Delete Meet</button>
-                                        </form>
-                                    {% endif %}
-                                {% endif %}
-                            </div>
-                        </div>
-                    {% endfor %}
+                <div class="tabs">
+                    <div class="tab active" data-tab="carmeets">Car Meets</div>
+                    <div class="tab" data-tab="races">Races</div>
                 </div>
-            </div>
-        </div>
-    </div>
+                
+                <div id="carmeets" class="tab-content active">
+                    <h2>Upcoming Car Meets</h2>
+                    <div class="carmeet-list">
+                        {% for meet in carmeets %}
+                            <div class="carmeet-card" data-id="{{ meet.id }}" data-type="carmeet" data-lat="{{ meet.latitude }}" data-lng="{{ meet.longitude }}">
+                                <h3 class="carmeet-title">{{ meet.name }}</h3>
+                                <p>Start: {{ meet.start_time }}</p>
+                                <p>End: {{ meet.end_time }}</p>
+                                <p>Car Entry Fee: {{ 'Yes' if meet.car_entry_fee else 'No' }}</p>
+                                <p>Visitor Ticket: {{ 'Yes' if meet.visitor_ticket else 'No' }}</p>
+                                
+                                <div class="participant-count">
+                                    Participants: {{ meet.participants|length }}
+                                </div>
+                                
+                                <div class="participant-list">
+                                    <ul>
+                                        {% for participant in meet.participants %}
+                                            <li>{{ participant.username }} {% if participant.car %}- {{ participant.car }}{% endif %}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                
+                                <div class="card-actions">
+                                    {% if current_user.is_authenticated %}
+                                        {% if current_user in meet.participants %}
+                                            <form action="{{ url_for('leave_carmeet', carmeet_id=meet.id) }}" method="post">
+                                                <button type="submit" class="btn btn-leave">Leave</button>
+                                            </form>
+                                        {% else %}
+                                            <form action="{{ url_for('join_carmeet', carmeet_id=meet.id) }}" method="post">
+                                                <button type="submit" class="btn">Join</button>
+                                            </form>
+                                        {% endif %}
+                                        
+                                        {% if meet.creator_id == current_user.id %}
+                                            <form action="{{ url_for('delete_carmeet', carmeet_id=meet.id) }}" method="post" onsubmit="return confirm('Are you sure you want to delete this car meet?');">
+                                                <button type="submit" class="btn btn-delete">Delete Meet</button>
+                                            </form>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div id="races" class="tab-content">
+                    <h2>Upcoming Races</h2>
+                    <div class="race-list">
+                        {% for race in races %}
+                            <div class="race-card" data-id="{{ race.id }}" data-type="race" data-lat="{{ race.latitude }}" data-lng="{{ race.longitude }}">
+                                <h3 class="race-title">{{ race.name }}</h3>
+                                <p>Car: {{ race.car_name }}</p>
+                                <p>Horsepower: {{ race.hp }}</p>
+                                {% if race.mods %}
+                                <p>Modifications: {{ race.mods }}</p>
+                                {% endif %}
+                                
+                                <div class="participant-count">
+                                    Participants: {{ race.participants|length }}
+                                </div>
+                                
+                                <div class="participant-list">
+                                    <ul>
+                                        {% for participant in race.participants %}
+                                            <li>{{ participant.username }} {% if participant.car %}- {{ participant.car }}{% endif %}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                
+                                <div class="card-actions">
+                                    {% if current_user.is_authenticated %}
+                                        {% if current_user in race.participants %}
+                                            <form action="{{ url_for('leave_race', race_id=race.id) }}" method="post">
+                                                <button type="submit" class="btn btn-leave">Leave</button>
+                                            </form>
+                                        {% else %}
+                                            <form action="{{ url_for('join_race', race_id=race.id) }}" method="post">
+                                                <button type="submit" class="btn">Join</button>
+                                            </form>
+                                        {% endif %}
+                                        
+                                        {% if race.creator_id == current_user.id %}
+                                            <form action="{{ url_for('delete_race', race_id=race.id) }}" method="post" onsubmit="return confirm('Are you sure you want to delete this race?');">
+                                                <button type="submit" class="btn btn-delete">Delete Race</button>
+                                            </form>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""></script>
     <script>
-        var map = L.map('map').setView([46.1512, 14.9955], 8);
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize map with specific height to ensure visibility
+            var map = L.map('map', {
+                attributionControl: true,
+                zoomControl: true
+            }).setView([46.1512, 14.9955], 8);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
-        }).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }).addTo(map);
 
-        // Add markers for all car meets
-        {% for meet in carmeets %}
-            var marker = L.marker([{{ meet.latitude }}, {{ meet.longitude }}]).addTo(map);
-            
-            var popupContent = `
-                <div class="meet-info">
-                    <h3>{{ meet.name }}</h3>
-                    <p>Start: {{ meet.start_time }}</p>
-                    <p>End: {{ meet.end_time }}</p>
-                    <p>Car Entry Fee: {{ 'Yes' if meet.car_entry_fee else 'No' }}</p>
-                    <p>Visitor Ticket: {{ 'Yes' if meet.visitor_ticket else 'No' }}</p>
-                    <div class="participant-count">Participants: {{ meet.participants|length }}</div>
-                    {% if current_user.is_authenticated %}
-                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                            {% if current_user in meet.participants %}
-                                <form action="{{ url_for('leave_carmeet', carmeet_id=meet.id) }}" method="post">
-                                    <button type="submit" class="btn btn-leave">Leave</button>
-                                </form>
-                            {% else %}
-                                <form action="{{ url_for('join_carmeet', carmeet_id=meet.id) }}" method="post">
-                                    <button type="submit" class="btn">Join</button>
-                                </form>
-                            {% endif %}
-                            
-                            {% if meet.creator_id == current_user.id %}
-                                <form action="{{ url_for('delete_carmeet', carmeet_id=meet.id) }}" method="post" onsubmit="return confirm('Are you sure you want to delete this car meet?');">
-                                    <button type="submit" class="btn btn-delete">Delete</button>
-                                </form>
-                            {% endif %}
-                        </div>
-                    {% endif %}
-                </div>
-            `;
-            marker.bindPopup(popupContent);
-            
-            // Open popup when clicking on the associated card
-            document.querySelector('.carmeet-card[data-id="{{ meet.id }}"]')?.addEventListener('click', function() {
-                marker.openPopup();
-                map.setView([{{ meet.latitude }}, {{ meet.longitude }}], 12);
-            });
-        {% endfor %}
-        
-        // Show participants in popup when hovering on marker
-        var markers = document.querySelectorAll('.leaflet-marker-icon');
-        markers.forEach(function(marker) {
-            marker.addEventListener('mouseover', function() {
-                var popup = this.parentElement.querySelector('.leaflet-popup');
-                if (popup) {
-                    popup.style.zIndex = 1000;
+            // Force map to invalidate size after initialization to handle any container sizing issues
+            setTimeout(function() {
+                map.invalidateSize();
+            }, 100);
+
+            // Store markers for both car meets and races
+            var carMeetMarkers = [];
+            var raceMarkers = [];
+
+            // Add markers for all car meets
+            {% for meet in carmeets %}
+                var meetMarker = L.marker([{{ meet.latitude }}, {{ meet.longitude }}]);
+                
+                var popupContent = `
+                    <div class="meet-info">
+                        <h3>{{ meet.name }}</h3>
+                        <p>Start: {{ meet.start_time }}</p>
+                        <p>End: {{ meet.end_time }}</p>
+                        <p>Car Entry Fee: {{ 'Yes' if meet.car_entry_fee else 'No' }}</p>
+                        <p>Visitor Ticket: {{ 'Yes' if meet.visitor_ticket else 'No' }}</p>
+                        <div class="participant-count">Participants: {{ meet.participants|length }}</div>
+                        
+                        {% if current_user.is_authenticated %}
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                {% if current_user in meet.participants %}
+                                    <form action="{{ url_for('leave_carmeet', carmeet_id=meet.id) }}" method="post">
+                                        <button type="submit" class="btn btn-leave">Leave</button>
+                                    </form>
+                                {% else %}
+                                    <form action="{{ url_for('join_carmeet', carmeet_id=meet.id) }}" method="post">
+                                        <button type="submit" class="btn">Join</button>
+                                    </form>
+                                {% endif %}
+                                
+                                {% if meet.creator_id == current_user.id %}
+                                    <form action="{{ url_for('delete_carmeet', carmeet_id=meet.id) }}" method="post" onsubmit="return confirm('Are you sure you want to delete this car meet?');">
+                                        <button type="submit" class="btn btn-delete">Delete</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                `;
+                meetMarker.bindPopup(popupContent);
+                carMeetMarkers.push(meetMarker);
+                meetMarker.addTo(map);
+            {% endfor %}
+
+            // Add markers for all races
+            {% for race in races %}
+                var raceMarker = L.marker([{{ race.latitude }}, {{ race.longitude }}]);
+                
+                var popupContent = `
+                    <div class="meet-info">
+                        <h3>{{ race.name }}</h3>
+                        <p>Car: {{ race.car_name }}</p>
+                        <p>Horsepower: {{ race.hp }}</p>
+                        {% if race.mods %}
+                        <p>Modifications: {{ race.mods }}</p>
+                        {% endif %}
+                        
+                        {% if current_user.is_authenticated %}
+                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                                {% if race.creator_id == current_user.id %}
+                                    <form action="{{ url_for('delete_race', race_id=race.id) }}" method="post" onsubmit="return confirm('Are you sure you want to delete this race?');">
+                                        <button type="submit" class="btn btn-delete">Delete</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                `;
+                raceMarker.bindPopup(popupContent);
+                raceMarkers.push(raceMarker);
+                // Don't add race markers yet - they'll be shown when the races tab is clicked
+            {% endfor %}
+
+            // Function to update map markers based on active tab
+            function updateMapMarkers(showType) {
+                if (showType === 'carmeets') {
+                    // Remove race markers and add car meet markers
+                    raceMarkers.forEach(marker => {
+                        if (map.hasLayer(marker)) {
+                            map.removeLayer(marker);
+                        }
+                    });
+                    carMeetMarkers.forEach(marker => {
+                        if (!map.hasLayer(marker)) {
+                            marker.addTo(map);
+                        }
+                    });
+                } else if (showType === 'races') {
+                    // Remove car meet markers and add race markers
+                    carMeetMarkers.forEach(marker => {
+                        if (map.hasLayer(marker)) {
+                            map.removeLayer(marker);
+                        }
+                    });
+                    raceMarkers.forEach(marker => {
+                        if (!map.hasLayer(marker)) {
+                            marker.addTo(map);
+                        }
+                    });
                 }
+                
+                // Force map redraw
+                map.invalidateSize();
+            }
+
+            // Tab switching functionality
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Get the tab data attribute
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // Remove active class from all tabs
+                    tabs.forEach(t => t.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    this.classList.add('active');
+                    
+                    // Hide all tab content
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    
+                    // Show the corresponding tab content
+                    document.getElementById(tabId).classList.add('active');
+                    
+                    // Update map markers based on active tab
+                    updateMapMarkers(tabId);
+                });
             });
+            
+            // Card click functionality to focus map on location
+            const cards = document.querySelectorAll('.carmeet-card, .race-card');
+            
+            cards.forEach(card => {
+                card.addEventListener('click', function() {
+                    const lat = parseFloat(this.getAttribute('data-lat'));
+                    const lng = parseFloat(this.getAttribute('data-lng'));
+                    const id = this.getAttribute('data-id');
+                    const type = this.getAttribute('data-type');
+                    
+                    if (lat && lng) {
+                        map.setView([lat, lng], 13);
+                        
+                        // Find and open the corresponding marker popup
+                        let markers = type === 'carmeet' ? carMeetMarkers : raceMarkers;
+                        let marker = markers.find(m => {
+                            return m._latlng.lat === lat && m._latlng.lng === lng;
+                        });
+                        
+                        if (marker) {
+                            // Make sure the marker is on the map before opening the popup
+                            if (!map.hasLayer(marker)) {
+                                marker.addTo(map);
+                            }
+                            
+                            setTimeout(() => {
+                                marker.openPopup();
+                            }, 300);
+                        }
+                    }
+                });
+            });
+            
+            // Show carmeet markers by default (hide race markers)
+            updateMapMarkers('carmeets');
+            
+            // Add automatic flash message removal after 5 seconds
+            const flashMessages = document.querySelectorAll('.flash-messages div');
+            if (flashMessages.length > 0) {
+                setTimeout(() => {
+                    flashMessages.forEach(message => {
+                        message.style.opacity = '0';
+                        message.style.transform = 'translateY(-10px)';
+                        setTimeout(() => {
+                            message.style.display = 'none';
+                        }, 500);
+                    });
+                }, 5000);
+            }
         });
     </script>
 </body>

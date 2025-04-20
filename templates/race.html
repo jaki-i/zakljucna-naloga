@@ -694,6 +694,14 @@
                 font-size: 1.5rem;
             }
         }
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fade-in 0.5s ease-out forwards;
+        }
     </style>
 </head>
 <body>
@@ -764,6 +772,9 @@
                 </div>
                 <div class="form-group">
                     {{ form.mods(placeholder="Modifications", class="form-control") }}
+                </div>
+                <div class="form-group">
+                    {{ form.participants_limit(placeholder="Number of participants (2-8)", class="form-control") }}
                 </div>
                 <button type="submit" class="btn btn-main">Create Race <span class="icon">+</span></button>
             </form>

@@ -6,13 +6,24 @@ from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import InputRequired, Length, ValidationError
 from flask_bcrypt import Bcrypt
 from flask import flash
-#pip install flask, flask_sqlalchemy, flask_login, flask_wtf, wtforms, wtforms.validators, flask_bcrypt
+import os
+from datetime import datetime
+from werkzeug.utils import secure_filename
+#pip install flask, flask_sqlalchemy, flask_login, flask_wtf, wtforms, wtforms.validators, flask_bcrypt, os, datetime, secure_filename
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SECRET_KEY'] = 'thisisasecretkey'
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.config['ALLOWED_IMAGE_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
+app.config['ALLOWED_VIDEO_EXTENSIONS'] = {'mp4', 'mov', 'avi', 'webm'}
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 db = SQLAlchemy(app)
+
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'images'), exist_ok=True)
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'videos'), exist_ok=True)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -21,6 +32,11 @@ login_manager.login_view = 'login'
 carmeet_participants = db.Table('carmeet_participants',
     db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
     db.Column('carmeet_id', db.Integer, db.ForeignKey('carmeet.id'), primary_key=True)
+)
+
+race_participants = db.Table('race_participants',
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'), primary_key=True),
+    db.Column('race_id', db.Integer, db.ForeignKey('race.id'), primary_key=True)
 )
 
 class User(db.Model, UserMixin):
@@ -51,7 +67,10 @@ class Race(db.Model):
     car_name = db.Column(db.String(20), nullable=False)
     hp = db.Column(db.String(4), nullable=False)
     mods = db.Column(db.String(20), nullable=True)
+    participants_limit = db.Column(db.Integer)
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    participants = db.relationship('User', secondary=race_participants,
+                                  backref=db.backref('races', lazy='dynamic'))
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -115,6 +134,9 @@ class RaceForm(FlaskForm):
         InputRequired(), Length(min=2, max=4)], render_kw={"placeholder": "Horsepower"})
     mods = StringField(validators=[
         Length(min=4, max=50)], render_kw={"placeholder": "Modifications"})
+    participants_limit = StringField(validators=[
+        InputRequired(), Length(max=2)], 
+        render_kw={"placeholder": "Number of participants (2-8)"})
     submit = SubmitField('Create race')
 
 @app.route('/')
@@ -160,7 +182,8 @@ def logout():
 @app.route('/glavna')
 def glavna():
     carmeets = Carmeet.query.all()
-    return render_template('glavna.html', carmeets=carmeets)
+    races = Race.query.all()
+    return render_template('glavna.html', carmeets=carmeets, races=races)
 
 @app.route('/account', methods=['GET', 'POST'])
 @login_required
@@ -283,7 +306,7 @@ def delete_carmeet(carmeet_id):
     
     return redirect(url_for('glavna'))
 
-@app.route('/race')
+@app.route('/race', methods=['GET', 'POST'])
 @login_required
 def race():
     form = RaceForm()
@@ -294,7 +317,7 @@ def race():
 
             if not latitude or not longitude:
                 flash('Please select a location on the map', 'error')
-                return render_template('carmeet.html', form=form)
+                return render_template('race.html', form=form)
             
             new_race = Race(
                 name=form.name.data,
@@ -303,8 +326,11 @@ def race():
                 car_name=form.car_name.data,
                 hp=form.hp.data,
                 mods=form.mods.data,
+                participants_limit=int(form.participants_limit.data),
                 creator_id=current_user.id
             )
+
+            new_race.participants.append(current_user)
 
             db.session.add(new_race)
             db.session.commit()
@@ -317,6 +343,10 @@ def race():
 @login_required
 def join_race(race_id):
     race = Race.query.get_or_404(race_id)
+    
+    if len(race.participants) >= race.participants_limit:
+        flash('This race has reached its participant limit', 'error')
+        return redirect(url_for('glavna'))
     
     if current_user not in race.participants:
         race.participants.append(current_user)
@@ -338,6 +368,24 @@ def leave_race(race_id):
         flash('You have left the car meet', 'success')
     else:
         flash('You are not participating in this car meet', 'info')
+    
+    return redirect(url_for('glavna'))
+
+@app.route('/delete_race/<int:race_id>', methods=['POST'])
+@login_required
+def delete_race(race_id):
+    race = Race.query.get_or_404(race_id)
+
+    if race.creator_id == current_user.id:
+        try:
+            db.session.delete(race)
+            db.session.commit()
+            flash('Race deleted successfully', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error deleting race: {str(e)}', 'error')
+    else:
+        flash('You can only delete car meets that you created', 'error')
     
     return redirect(url_for('glavna'))
 
