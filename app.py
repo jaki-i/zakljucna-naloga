@@ -2,29 +2,20 @@ from flask import Flask, render_template, url_for, redirect, flash, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileField, FileRequired, FileAllowed
-from wtforms import StringField, TextAreaField, SubmitField, HiddenField, PasswordField
+from wtforms import StringField, SubmitField, PasswordField, FileField
 from wtforms.validators import InputRequired, Length, ValidationError
 from flask_bcrypt import Bcrypt
 from flask import flash
-import os
-from datetime import datetime
 from werkzeug.utils import secure_filename
-#pip install flask, flask_sqlalchemy, flask_login, flask_wtf, wtforms, wtforms.validators, flask_bcrypt, os, datetime, werkzeug.utils, flask_wtf.file
+import os
+#pip install flask, flask_sqlalchemy, flask_login, flask_wtf, wtforms, wtforms.validators, flask_bcrypt
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SECRET_KEY'] = 'thisisasecretkey'
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
-app.config['ALLOWED_IMAGE_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
-app.config['ALLOWED_VIDEO_EXTENSIONS'] = {'mp4', 'mov', 'avi', 'webm'}
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+app.config['UPLOAD_FOLDER'] = 'static/files'
 db = SQLAlchemy(app)
-
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'images'), exist_ok=True)
-os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'videos'), exist_ok=True)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -46,7 +37,6 @@ class User(db.Model, UserMixin):
     car = db.Column(db.String(20), nullable=True)
     car_description = db.Column(db.Text, nullable=True)
     password = db.Column(db.String(80), nullable=False)
-    media = db.relationship('Media', backref='uploader', lazy=True)
 
 class Carmeet(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -73,33 +63,6 @@ class Race(db.Model):
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     participants = db.relationship('User', secondary=race_participants,
                                   backref=db.backref('races', lazy='dynamic'))
-    
-class Media(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    filename = db.Column(db.String(255), nullable=False)
-    file_path = db.Column(db.String(255), nullable=False)
-    media_type = db.Column(db.String(20), nullable=False)
-    upload_date = db.Column(db.DateTime, default=datetime.utcnow)
-    title = db.Column(db.String(100), nullable=True)
-    description = db.Column(db.Text, nullable=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    user = db.relationship('User', backref=db.backref('media', lazy=True))
-    event_type = db.Column(db.String(20), nullable=False)
-    event_id = db.Column(db.Integer, nullable=False)
-
-    class MediaUploadForm(FlaskForm):
-        file = FileField('Media File', validators=[
-            FileRequired()
-        ])
-        title = StringField('Title', validators=[
-            InputRequired(), Length(max=100)
-        ])
-        description = TextAreaField('Description', validators=[
-            Length(max=500)
-        ])
-        event_type = HiddenField('Event Type', validators=[InputRequired()])
-        event_id = HiddenField('Event ID', validators=[InputRequired()])
-        submit = SubmitField('Upload')
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -168,6 +131,10 @@ class RaceForm(FlaskForm):
         render_kw={"placeholder": "Number of participants (2-8)"})
     submit = SubmitField('Create race')
 
+class UploadFileForm(FlaskForm):
+    file = FileField("File", validators=[InputRequired()])
+    submit = SubmitField('Upload File')
+
 @app.route('/')
 def home():
     return render_template('home.html')
@@ -208,11 +175,17 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-@app.route('/glavna')
+@app.route('/glavna', methods=['GET', 'POST'])
+@login_required
 def glavna():
     carmeets = Carmeet.query.all()
     races = Race.query.all()
-    return render_template('glavna.html', carmeets=carmeets, races=races)
+    form = UploadFileForm()
+    if form.validate_on_submit():
+        file = form.file.data
+        file.save(os.path.join(os.path.abspath(os.path.dirname(__file__)),app.config['UPLOAD_FOLDER'],secure_filename(file.filename)))
+        flash('File has been uploaded')
+    return render_template('glavna.html', carmeets=carmeets, races=races, form=form)
 
 @app.route('/account', methods=['GET', 'POST'])
 @login_required
@@ -292,7 +265,7 @@ def carmeet():
 @app.route('/join_carmeet/<int:carmeet_id>', methods=['POST'])
 @login_required
 def join_carmeet(carmeet_id):
-    carmeet = Carmeet.query.get_or_404(carmeet_id)
+    carmeet = Carmeet.query.get(carmeet_id)
     
     if current_user not in carmeet.participants:
         carmeet.participants.append(current_user)
@@ -306,7 +279,7 @@ def join_carmeet(carmeet_id):
 @app.route('/leave_carmeet/<int:carmeet_id>', methods=['POST'])
 @login_required
 def leave_carmeet(carmeet_id):
-    carmeet = Carmeet.query.get_or_404(carmeet_id)
+    carmeet = Carmeet.query.get(carmeet_id)
     
     if current_user in carmeet.participants:
         carmeet.participants.remove(current_user)
@@ -320,16 +293,12 @@ def leave_carmeet(carmeet_id):
 @app.route('/delete_carmeet/<int:carmeet_id>', methods=['POST'])
 @login_required
 def delete_carmeet(carmeet_id):
-    carmeet = Carmeet.query.get_or_404(carmeet_id)
+    carmeet = Carmeet.query.get(carmeet_id)
 
     if carmeet.creator_id == current_user.id:
-        try:
-            db.session.delete(carmeet)
-            db.session.commit()
-            flash('Car meet deleted successfully', 'success')
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error deleting car meet: {str(e)}', 'error')
+        db.session.delete(carmeet)
+        db.session.commit()
+        flash('Car meet deleted successfully', 'success')
     else:
         flash('You can only delete car meets that you created', 'error')
     
@@ -371,7 +340,7 @@ def race():
 @app.route('/join_race/<int:race_id>', methods=['POST'])
 @login_required
 def join_race(race_id):
-    race = Race.query.get_or_404(race_id)
+    race = Race.query.get(race_id)
     
     if len(race.participants) >= race.participants_limit:
         flash('This race has reached its participant limit', 'error')
@@ -389,7 +358,7 @@ def join_race(race_id):
 @app.route('/leave_race/<int:race_id>', methods=['POST'])
 @login_required
 def leave_race(race_id):
-    race = Race.query.get_or_404(race_id)
+    race = Race.query.get(race_id)
     
     if current_user in race.participants:
         race.participants.remove(current_user)
@@ -403,41 +372,16 @@ def leave_race(race_id):
 @app.route('/delete_race/<int:race_id>', methods=['POST'])
 @login_required
 def delete_race(race_id):
-    race = Race.query.get_or_404(race_id)
+    race = Race.query.get(race_id)
 
     if race.creator_id == current_user.id:
-        try:
-            db.session.delete(race)
-            db.session.commit()
-            flash('Race deleted successfully', 'success')
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error deleting race: {str(e)}', 'error')
+        db.session.delete(race)
+        db.session.commit()
+        flash('Race deleted successfully', 'success')
     else:
         flash('You can only delete races that you created', 'error')
     
     return redirect(url_for('glavna'))
-
-def allowed_file(filename, file_type):
-    extension = filename.rsplit('.', 1)[1].lower()
-    
-    if file_type == 'image':
-        return extension in app.config['ALLOWED_IMAGE_EXTENSIONS']
-    elif file_type == 'video':
-        return extension in app.config['ALLOWED_VIDEO_EXTENSIONS']
-    return False
-
-def save_file(file, file_type):
-    if file and allowed_file(file.filename, file_type):
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        filename = secure_filename(f"{timestamp}_{file.filename}")
-        
-        subfolder = 'images' if file_type == 'image' else 'videos'
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], subfolder, filename)
-        file.save(file_path)
-        
-        return filename, os.path.join(subfolder, filename)
-    return None, None
 
 if __name__ == "__main__":
     with app.app_context():
